@@ -432,6 +432,38 @@ function analyzeNames(rawA,rawB){
     add('none','跨语言加成',f.cross?4:0,4,false,'一个中文一个西文——跨国恋氛围加成');
   }
 
+  /* --- v2.2 新增踩分点 --- */
+  const hasDup=arr=>arr.some((c,i)=>i>0&&arr[i-1]===c);
+  const dupName=hasDup(A)?nA:hasDup(B)?nB:null;
+  add('none','叠字可爱',dupName?6:0,6,false,
+    dupName?`「${dupName}」含叠字——读起来自带撒娇语气`:'两个名字都没有叠字');
+  const chain=!f.self&&(A[A.length-1]===B[0]||B[B.length-1]===A[0]);
+  add('none','名字接龙',chain?8:0,8,false,
+    chain?'一人的尾字正是另一人的首字——名字自己就在接话':'名字之间没有首尾接龙');
+  const totalLen=A.length+B.length;
+  add('none','字数凑整',totalLen===5?5:(totalLen===4||totalLen===6)?3:0,5,false,
+    totalLen===5?`合计 5 字——黄金字数，念起来刚刚好`:
+    (totalLen===4||totalLen===6)?`合计 ${totalLen} 字——偶数字数，工整对称`:`合计 ${totalLen} 字——字数不凑巧，不影响感情，但少了点仪式感`);
+  if(sA==='cjk'&&sB==='cjk'){
+    const hA=PY[A[0]], hB=PY[B[0]];
+    if(hA&&hB){
+      const ping=t=>t<=2;
+      const comp=ping(hA[2])!==ping(hB[2]);
+      add('phonetic','平仄互补',comp?5:0,5,false,
+        comp?`首字一平一仄（${hA[2]}声 · ${hB[2]}声）——一高一低，有来有回`:
+        `首字同为${ping(hA[2])?'平':'仄'}声——节奏一致，走同一条路线`);
+      const homo=A[0]!==B[0]&&hA[0]===hB[0]&&hA[1]===hB[1]&&hA[2]===hB[2];
+      add('phonetic','谐音彩蛋',homo?6:0,6,false,
+        homo?`「${A[0]}」「${B[0]}」同音不同字——暗号式的谐音，懂的都懂`:'首字没有同音异字');
+    }else{
+      add('phonetic','平仄互补',0,5,true,'首字不在内置字库——无法判定平仄');
+      add('phonetic','谐音彩蛋',0,6,true,'首字不在内置字库——无法判定谐音');
+    }
+  }else{
+    add('phonetic','平仄互补',0,5,true,'中文专属规则，跳过');
+    add('phonetic','谐音彩蛋',0,6,true,'中文专属规则，跳过');
+  }
+
   /* --- 汇总 --- */
   const score=Math.min(99,total);
   const grp=g=>{let p=0,m=0;rows.forEach(r=>{if(r.group===g&&!r.skip){p+=r.pts;m+=r.max;}});return m?Math.round(p/m*100):50;};
