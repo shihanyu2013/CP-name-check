@@ -464,6 +464,50 @@ function analyzeNames(rawA,rawB){
     add('phonetic','谐音彩蛋',0,6,true,'中文专属规则，跳过');
   }
 
+  /* --- v2.3 新增踩分点 --- */
+  const IMG="月星云雨风雪山海光晨露霞雾";
+  const imgA=[...new Set(A.filter(c=>IMG.includes(c)))], imgB=[...new Set(B.filter(c=>IMG.includes(c)))];
+  const imgCommon=imgA.length&&imgB.length;
+  add('none','意象共鸣',imgCommon?6:0,6,false,
+    imgCommon?`双方都带有自然意象（${imgA.concat(imgB).filter((v,i,arr)=>arr.indexOf(v)===i).join('·')}）——诗意相通`:
+    '名字里没有共享的自然意象字');
+  if(sA==='cjk'&&sB==='cjk'){
+    const lastA=PY[A[A.length-1]], lastB=PY[B[B.length-1]];
+    const fA=PY[A[0]], fB=PY[B[0]];
+    if(lastA&&lastB){
+      const tailInit=lastA[0]!==""&&lastA[0]===lastB[0];
+      add('phonetic','尾音呼应',tailInit?4:0,4,false,
+        tailInit?`尾字声母同为「${lastA[0]}」——收尾的那一下，嗓音对上了`:'尾字声母不同，收尾各走各的');
+      add('phonetic','同调收尾',lastA[2]===lastB[2]?3:0,3,false,
+        lastA[2]===lastB[2]?`尾字同为${lastA[2]}声——句末的语气一致`:'尾字声调不同，句末一升一降');
+    }else{
+      add('phonetic','尾音呼应',0,4,true,'尾字不在内置字库——无法判定');
+      add('phonetic','同调收尾',0,3,true,'尾字不在内置字库——无法判定');
+    }
+    if(fA&&fB){
+      const headFin=fA[1]!==""&&fA[1]===fB[1];
+      add('phonetic','首韵呼应',headFin&&A[0]!==B[0]?4:0,4,false,
+        headFin&&A[0]!==B[0]?`首字同押「${fA[1]}」——开口的韵脚一模一样`:'首字韵母没有呼应');
+    }else{
+      add('phonetic','首韵呼应',0,4,true,'首字不在内置字库——无法判定');
+    }
+    const elems=new Set([...A,...B].map(c=>PY[c]&&PY[c][3]).filter(Boolean));
+    if(elems.size>0){
+      const ePts=elems.size===1?5:elems.size===2?2:0;
+      add('imagery','五行同源',ePts,5,false,
+        elems.size===1?`全部字符同属「${[...elems][0]}」——同一个五行里长大的`:
+        elems.size===2?`涉及两种五行（${[...elems].join('·')}）——互补有余，同源不足`:
+        '五行杂陈，各有各的根');
+    }else{
+      add('imagery','五行同源',0,5,true,'无字库内字符——无法判定五行');
+    }
+  }else{
+    add('phonetic','尾音呼应',0,4,true,'中文专属规则，跳过');
+    add('phonetic','同调收尾',0,3,true,'中文专属规则，跳过');
+    add('phonetic','首韵呼应',0,4,true,'中文专属规则，跳过');
+    add('imagery','五行同源',0,5,true,'中文专属规则，跳过');
+  }
+
   /* --- 汇总 --- */
   const score=Math.min(99,total);
   const grp=g=>{let p=0,m=0;rows.forEach(r=>{if(r.group===g&&!r.skip){p+=r.pts;m+=r.max;}});return m?Math.round(p/m*100):50;};
