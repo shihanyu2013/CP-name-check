@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CP 鉴定所 2.0 · 全规则判定版</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+    background:
+      radial-gradient(1200px 800px at 20% -10%, #4a1d6e 0%, transparent 60%),
+      radial-gradient(1000px 700px at 110% 110%, #6e1d4f 0%, transparent 55%),
+      linear-gradient(135deg,#1b1030 0%,#2a1438 45%,#1a0f2e 100%);
+    color:#fff;min-height:100vh;overflow-x:hidden;position:relative;
+  }
+  .bg-hearts{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+  .bg-hearts span{position:absolute;bottom:-60px;opacity:0;animation:floatUp linear infinite}
+  @keyframes floatUp{
+    0%{transform:translateY(0) rotate(0deg);opacity:0}
+    10%{opacity:.5} 90%{opacity:.12}
+    100%{transform:translateY(-115vh) rotate(28deg);opacity:0}
+  }
+  .card{position:relative;z-index:1;max-width:540px;margin:40px auto 60px;padding:32px 28px 26px;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:26px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    box-shadow:0 20px 60px rgba(0,0,0,.45)}
+  h1{font-size:32px;text-align:center;letter-spacing:2px;
+    background:linear-gradient(120deg,#ffb3d1,#ff7eb3 40%,#ffc46b 90%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{text-align:center;color:rgba(255,255,255,.6);margin-top:8px;font-size:14px;letter-spacing:1px}
+  .tags{display:flex;justify-content:center;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .tags span{font-size:11px;padding:4px 10px;border-radius:999px;color:rgba(255,255,255,.7);
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);letter-spacing:1px}
+  .input-row{display:flex;align-items:center;gap:12px;margin-top:22px}
+  .input-row input{flex:1;min-width:0;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.2);
+    background:rgba(0,0,0,.25);color:#fff;font-size:16px;outline:none;transition:.25s;text-align:center}
+  .input-row input:focus{border-color:#ff7eb3;box-shadow:0 0 0 3px rgba(255,126,179,.18)}
+  .input-row input::placeholder{color:rgba(255,255,255,.35)}
+  .x{color:#ff7eb3;font-size:20px;font-weight:700;text-shadow:0 0 12px rgba(255,126,179,.6);flex:none}
+  .go-btn{width:100%;margin-top:18px;padding:15px;border:none;border-radius:16px;cursor:pointer;
+    font-size:17px;font-weight:700;letter-spacing:3px;color:#fff;
+    background:linear-gradient(120deg,#ff6ea9,#ff4d79 55%,#ff8a5c);
+    box-shadow:0 8px 24px rgba(255,77,121,.35);transition:.25s}
+  .go-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(255,77,121,.5)}
+  .go-btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+  .toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);opacity:0;
+    background:rgba(30,10,30,.92);border:1px solid rgba(255,126,179,.4);padding:10px 18px;border-radius:12px;
+    font-size:14px;transition:.3s;z-index:9;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .shake{animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+  .result{margin-top:22px}
+  .hidden{display:none!important}
+  .scan{text-align:center;padding:26px 0 12px}
+  .scan-icon{font-size:42px;animation:wob 1s ease-in-out infinite;display:inline-block}
+  @keyframes wob{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg) scale(1.15)}}
+  .scan-text{margin-top:14px;color:rgba(255,255,255,.75);font-size:15px;letter-spacing:1px}
+  .scan-text::after{content:'';animation:dots 1.2s steps(1) infinite}
+  @keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+  .verdict{animation:fadeUp .5s ease both}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .cp-badge{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px}
+  .cp-name{padding:8px 18px;border-radius:999px;font-weight:700;font-size:16px;letter-spacing:1px;
+    background:linear-gradient(120deg,rgba(255,126,179,.25),rgba(255,138,92,.25));
+    border:1px solid rgba(255,126,179,.5)}
+  .cp-type{font-size:13px;color:rgba(255,255,255,.75);padding:6px 12px;border-radius:999px;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15)}
+  .gauge-wrap{position:relative;width:200px;margin:22px auto 6px}
+  .gauge{display:block;transform:rotate(-90deg)}
+  .gauge .track{fill:none;stroke:rgba(255,255,255,.1);stroke-width:12}
+  .gauge .fill{fill:none;stroke:url(#gaugeGrad);stroke-width:12;stroke-linecap:round;
+    stroke-dasharray:477.52;stroke-dashoffset:477.52;
+    transition:stroke-dashoffset 1.4s cubic-bezier(.22,1,.36,1);
+    filter:drop-shadow(0 0 8px rgba(255,110,169,.55))}
+  .score-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column}
+  .score-num b{font-size:56px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;
+    background:linear-gradient(160deg,#fff,#ffd2e4);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .score-num small{margin-top:6px;font-size:12px;color:rgba(255,255,255,.55);letter-spacing:5px}
+  .tier{text-align:center;margin-top:10px;font-size:18px;font-weight:700;letter-spacing:1px}
+  .chips{margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;font-size:12px;color:rgba(255,255,255,.6)}
+  .chips span{padding:5px 11px;border-radius:999px;color:#ffd2e4;
+    background:rgba(255,126,179,.14);border:1px solid rgba(255,126,179,.35)}
+  .bars{margin:22px auto 0;max-width:370px;display:flex;flex-direction:column;gap:12px}
+  .bar-row{display:flex;align-items:center;gap:10px;font-size:13px}
+  .bar-label{width:76px;color:rgba(255,255,255,.7);flex:none;text-align:right}
+  .bar-track{flex:1;height:10px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}
+  .bar-fill{height:100%;width:0;border-radius:999px;transition:width 1.2s cubic-bezier(.22,1,.36,1)}
+  .bar-val{width:30px;flex:none;font-weight:600;font-variant-numeric:tabular-nums}
+  .rules{margin:22px auto 0;max-width:400px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.1);
+    border-radius:14px;padding:4px 14px 8px}
+  .sum-line{font-size:12px;color:rgba(255,255,255,.6);text-align:center;padding:10px 0 2px;letter-spacing:.5px}
+  .rule-row{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.08)}
+  .rule-row:last-child{border-bottom:none}
+  .rule-ico{flex:none;width:18px;text-align:center;font-size:12px}
+  .rule-body{flex:1;line-height:1.5}
+  .rule-title{font-weight:600;font-size:12.5px}
+  .rule-desc{color:rgba(255,255,255,.55);font-size:11.5px;margin-top:1px}
+  .rule-pts{flex:none;font-weight:700;color:#ff9dc3;font-size:12px;font-variant-numeric:tabular-nums;padding-top:1px}
+  .rule-pts.zero{color:rgba(255,255,255,.3)}
+  .rule-pts.skip{color:rgba(255,255,255,.25);font-weight:400}
+  .quote{margin:20px auto 0;max-width:400px;padding:14px 18px;border-radius:14px;
+    background:rgba(255,255,255,.06);border:1px dashed rgba(255,126,179,.4);
+    text-align:center;font-size:14px;color:rgba(255,255,255,.85);line-height:1.7}
+  .again-btn{display:block;margin:20px auto 0;padding:11px 28px;border-radius:999px;cursor:pointer;
+    background:transparent;color:#ff9dc3;border:1px solid rgba(255,157,195,.5);font-size:14px;transition:.25s}
+  .again-btn:hover{background:rgba(255,126,179,.12)}
+  .footnote{margin-top:18px;text-align:center;font-size:11px;color:rgba(255,255,255,.35);letter-spacing:1px;line-height:1.8}
+  .history{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+  .h-chip{font-size:12px;padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.65)}
+  .h-chip b{color:#ff9dc3}
+  .burst{position:absolute;pointer-events:none;font-size:18px;animation:burstUp 1.6s ease-out forwards;z-index:5}
+  @keyframes burstUp{0%{opacity:1;transform:translate(0,0) scale(.6)}100%{opacity:0;transform:translate(var(--dx),-90px) scale(1.25)}}
+  @media (max-width:520px){
+    .card{margin:16px 12px 40px;padding:26px 16px}
+    h1{font-size:27px}.bar-label{width:66px}
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-hearts" id="bgHearts"></div>
+
+<main class="card">
+  <h1>💕 CP 鉴定所 2.0</h1>
+  <p class="sub">不摇骰子 · 按名字本身判 · 每一分都有出处</p>
+  <div class="tags">
+    <span>📜 全规则判定</span><span>🎲 零随机</span><span>🔍 判据全公开</span>
+  </div>
+
+  <section class="input-row">
+    <input id="nameA" maxlength="10" placeholder="名字 A">
+    <div class="x">×</div>
+    <input id="nameB" maxlength="10" placeholder="名字 B">
+  </section>
+
+  <button class="go-btn" id="goBtn">开 始 鉴 定 🔍</button>
+
+  <section class="result hidden" id="result">
+    <div class="scan" id="scan">
+      <div class="scan-icon">📜</div>
+      <div class="scan-text" id="scanText">正在查阅发音字典</div>
+    </div>
+
+    <div class="verdict hidden" id="verdict">
+      <div class="cp-badge">
+        <span class="cp-name">CP 名：<span id="cpName"></span></span>
+        <span class="cp-type" id="cpType"></span>
+      </div>
+
+      <div class="gauge-wrap" id="gaugeWrap">
+        <svg class="gauge" viewBox="0 0 180 180">
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ffb86b"/>
+              <stop offset="55%" stop-color="#ff5f8f"/>
+              <stop offset="100%" stop-color="#ff9dc3"/>
+            </linearGradient>
+          </defs>
+          <circle class="track" cx="90" cy="90" r="76"/>
+          <circle class="fill" id="gaugeFill" cx="90" cy="90" r="76"/>
+        </svg>
+        <div class="score-num"><b id="scoreNum">0</b><small>好磕指数</small></div>
+      </div>
+
+      <div class="tier" id="tier"></div>
+      <div class="chips" id="chips"></div>
+
+      <div class="bars">
+        <div class="bar-row"><div class="bar-label">音韵契合</div><div class="bar-track"><div class="bar-fill"></div></div><div class="bar-val">0</div></div>
+        <div class="bar-row"><div class="bar-label">意境缘分</div><div class="bar-track"><div class="bar-fill"></div></div><div class="bar-val">0</div></div>
+        <div class="bar-row"><div class="bar-label">氛围张力</div><div class="bar-track"><div class="bar-fill"></div></div><div class="bar-val">0</div></div>
+      </div>
+
+      <div class="rules">
+        <div class="sum-line" id="sumLine"></div>
+        <div id="rulesList"></div>
+      </div>
+
+      <div class="quote" id="quote"></div>
+      <button class="again-btn" id="againBtn">再测一对 🔁</button>
+    </div>
+  </section>
+
+  <div class="history" id="history"></div>
+
+  <p class="footnote">✦ 本页没有一处 Math.random · 分数完全由声母韵母 / 声调 / 五行 / 结构规则产生 ✦
+✦ 生僻字查无此字会如实标注「无法判定」，绝不蒙混过关 ✦</p>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ 内置字库：字 → [声母, 韵母, 声调, 五行] ============ */
+const PY={
+"王":["w","ang",2,"土"],"李":["l","i",3,"木"],"张":["zh","ang",1,"火"],"刘":["l","iu",2,"火"],"陈":["ch","en",2,"火"],
+"杨":["y","ang",2,"木"],"黄":["h","uang",2,"土"],"赵":["zh","ao",4,"火"],"周":["zh","ou",1,"金"],"吴":["w","u",2,"木"],
+"徐":["x","u",2,"金"],"孙":["s","un",1,"金"],"马":["m","a",3,"水"],"朱":["zh","u",1,"木"],"胡":["h","u",2,"土"],
+"郭":["g","uo",1,"水"],"何":["h","e",2,"木"],"高":["g","ao",1,"木"],"林":["l","in",2,"木"],"罗":["l","uo",2,"火"],
+"郑":["zh","eng",4,"火"],"梁":["l","iang",2,"火"],"谢":["x","ie",4,"金"],"宋":["s","ong",4,"金"],"唐":["t","ang",2,"火"],
+"许":["x","u",3,"木"],"韩":["h","an",2,"水"],"冯":["f","eng",2,"水"],"邓":["d","eng",4,"火"],"曹":["c","ao",2,"金"],
+"彭":["p","eng",2,"水"],"曾":["z","eng",1,"金"],"萧":["x","iao",1,"木"],"肖":["x","iao",1,"木"],"田":["t","ian",2,"火"],
+"董":["d","ong",3,"木"],"袁":["y","uan",2,"土"],"潘":["p","an",1,"水"],"蒋":["j","iang",3,"木"],"蔡":["c","ai",4,"木"],
+"余":["y","u",2,"土"],"杜":["d","u",4,"木"],"叶":["y","e",4,"土"],"程":["ch","eng",2,"火"],"苏":["s","u",1,"木"],
+"魏":["w","ei",4,"木"],"吕":["l","v",3,"火"],"丁":["d","ing",1,"火"],"沈":["sh","en",3,"水"],"任":["r","en",2,"金"],
+"姚":["y","ao",2,"土"],"卢":["l","u",2,"火"],"姜":["j","iang",1,"木"],"崔":["c","ui",1,"土"],"钟":["zh","ong",1,"金"],
+"谭":["t","an",2,"火"],"陆":["l","u",4,"火"],"汪":["w","ang",1,"水"],"范":["f","an",4,"水"],"金":["j","in",1,"金"],
+"石":["sh","i",2,"金"],"廖":["l","iao",4,"火"],"贾":["j","ia",3,"木"],"夏":["x","ia",4,"火"],"韦":["w","ei",2,"土"],
+"傅":["f","u",4,"水"],"方":["f","ang",1,"水"],"白":["b","ai",2,"水"],"邹":["z","ou",1,"金"],"孟":["m","eng",4,"水"],
+"熊":["x","iong",2,"水"],"秦":["q","in",2,"火"],"邱":["q","iu",1,"木"],"江":["j","iang",1,"水"],"尹":["y","in",3,"土"],
+"薛":["x","ue",1,"木"],"闫":["y","an",2,"土"],"段":["d","uan",4,"火"],"雷":["l","ei",2,"水"],"侯":["h","ou",2,"水"],
+"龙":["l","ong",2,"火"],"史":["sh","i",3,"金"],"陶":["t","ao",2,"火"],"黎":["l","i",2,"火"],"贺":["h","e",4,"水"],
+"顾":["g","u",4,"木"],"毛":["m","ao",2,"水"],"郝":["h","ao",3,"金"],"龚":["g","ong",1,"木"],"邵":["sh","ao",4,"金"],
+"万":["w","an",4,"水"],"钱":["q","ian",2,"金"],"严":["y","an",2,"木"],"武":["w","u",3,"水"],"戴":["d","ai",4,"火"],
+"莫":["m","o",4,"水"],"孔":["k","ong",3,"木"],"向":["x","iang",4,"水"],"汤":["t","ang",1,"水"],"常":["ch","ang",2,"金"],
+"伟":["w","ei",3,"土"],"芳":["f","ang",1,"木"],"娜":["n","a",4,"火"],"敏":["m","in",3,"水"],"静":["j","ing",4,"金"],
+"丽":["l","i",4,"火"],"强":["q","iang",2,"木"],"磊":["l","ei",3,"土"],"军":["j","un",1,"木"],"洋":["y","ang",2,"水"],
+"勇":["y","ong",3,"土"],"艳":["y","an",4,"土"],"杰":["j","ie",2,"木"],"娟":["j","uan",1,"木"],"涛":["t","ao",1,"水"],
+"明":["m","ing",2,"火"],"超":["ch","ao",1,"金"],"秀":["x","iu",4,"金"],"霞":["x","ia",2,"水"],"平":["p","ing",2,"水"],
+"刚":["g","ang",1,"金"],"桂":["g","ui",4,"木"],"英":["y","ing",1,"木"],"华":["h","ua",2,"水"],"慧":["h","ui",4,"水"],
+"建":["j","ian",4,"木"],"文":["w","en",2,"水"],"辉":["h","ui",1,"火"],"玲":["l","ing",2,"火"],"云":["y","un",2,"水"],
+"兰":["l","an",2,"木"],"梅":["m","ei",2,"木"],"鹏":["p","eng",2,"水"],"飞":["f","ei",1,"水"],"鑫":["x","in",1,"金"],
+"波":["b","o",1,"水"],"斌":["b","in",1,"水"],"宇":["y","u",3,"土"],"浩":["h","ao",4,"水"],"凯":["k","ai",3,"木"],
+"佳":["j","ia",1,"木"],"晨":["ch","en",2,"火"],"睿":["r","ui",4,"金"],"轩":["x","uan",1,"土"],"泽":["z","e",2,"水"],
+"博":["b","o",2,"水"],"诚":["ch","eng",2,"金"],"昊":["h","ao",4,"火"],"子":["z","i",3,"水"],"涵":["h","an",2,"水"],
+"萱":["x","uan",1,"木"],"诗":["sh","i",1,"金"],"雨":["y","u",3,"水"],"欣":["x","in",1,"木"],"婷":["t","ing",2,"火"],
+"雪":["x","ue",3,"水"],"琳":["l","in",2,"木"],"悦":["y","ue",4,"金"],"彤":["t","ong",2,"火"],"可":["k","e",3,"木"],
+"心":["x","in",1,"金"],"怡":["y","i",2,"土"],"妍":["y","an",2,"水"],"琪":["q","i",2,"木"],"瑶":["y","ao",2,"火"],
+"舒":["sh","u",1,"金"],"铭":["m","ing",2,"金"],"锐":["r","ui",4,"金"],"帆":["f","an",1,"水"],"哲":["zh","e",2,"火"],
+"瑞":["r","ui",4,"金"],"宁":["n","ing",2,"火"],"楠":["n","an",2,"木"],"岚":["l","an",2,"土"],"峰":["f","eng",1,"土"],
+"山":["sh","an",1,"土"],"松":["s","ong",1,"木"],"竹":["zh","u",2,"木"],"荷":["h","e",2,"木"],"莲":["l","ian",2,"木"],
+"蕊":["r","ui",3,"木"],"薇":["w","ei",1,"木"],"茜":["q","ian",4,"木"],"芸":["y","un",2,"木"],"若":["r","uo",4,"木"],
+"颖":["y","ing",3,"木"],"禾":["h","e",2,"木"],"秋":["q","iu",1,"金"],"春":["ch","un",1,"金"],"冬":["d","ong",1,"水"],
+"星":["x","ing",1,"金"],"辰":["ch","en",2,"土"],"曦":["x","i",1,"火"],"晓":["x","iao",3,"火"],"旭":["x","u",4,"火"],
+"晴":["q","ing",2,"火"],"昕":["x","in",1,"火"],"炎":["y","an",2,"火"],"志":["zh","i",4,"火"],"智":["zh","i",4,"火"],
+"沁":["q","in",4,"水"],"淇":["q","i",2,"水"],"滢":["y","ing",2,"水"],"洁":["j","ie",2,"水"],"清":["q","ing",1,"水"],
+"源":["y","uan",2,"水"],"润":["r","un",4,"水"],"溪":["x","i",1,"水"],"澜":["l","an",2,"水"],"瀚":["h","an",4,"水"],
+"沐":["m","u",4,"水"],"泉":["q","uan",2,"水"],"洛":["l","uo",4,"水"],"湘":["x","iang",1,"水"],"海":["h","ai",3,"水"],
+"河":["h","e",2,"水"],"霖":["l","in",2,"水"],"雯":["w","en",2,"水"],"露":["l","u",4,"水"],"冰":["b","ing",1,"水"],
+"月":["y","ue",4,"木"],"阳":["y","ang",2,"土"],"光":["g","uang",1,"火"],"亮":["l","iang",4,"火"],"烨":["y","e",4,"火"],
+"煜":["y","u",4,"火"],"炜":["w","ei",3,"火"],"岩":["y","an",2,"土"],"岳":["y","ue",4,"土"],"城":["ch","eng",2,"土"],
+"坤":["k","un",1,"土"],"安":["","an",1,"土"],"宸":["ch","en",2,"金"],"宏":["h","ong",2,"水"],"家":["j","ia",1,"木"],
+"容":["r","ong",2,"土"],"玉":["y","u",4,"金"],"珍":["zh","en",1,"火"],"珠":["zh","u",1,"金"],"珊":["sh","an",1,"金"],
+"琴":["q","in",2,"木"],"瑾":["j","in",3,"火"],"瑜":["y","u",2,"金"],"锦":["j","in",3,"金"],"银":["y","in",2,"金"],
+"锋":["f","eng",1,"金"],"钰":["y","u",4,"金"],"素":["s","u",4,"金"],"紫":["z","i",3,"金"],"红":["h","ong",2,"水"],
+"丹":["d","an",4,"火"],"青":["q","ing",1,"金"],"蓝":["l","an",2,"木"],"雅":["y","a",3,"木"],"淑":["sh","u",1,"水"],
+"婉":["w","an",3,"土"],"惠":["h","ui",4,"水"],"艺":["y","i",4,"木"],"彬":["b","in",1,"木"],"彦":["y","an",4,"木"],
+"嘉":["j","ia",1,"木"],"俊":["j","un",4,"火"],"倩":["q","ian",4,"金"],"健":["j","ian",4,"木"],"元":["y","uan",2,"木"],
+"天":["t","ian",1,"火"],"民":["m","in",2,"水"],"维":["w","ei",2,"土"],"卿":["q","ing",1,"木"],"慕":["m","u",4,"水"],
+"然":["r","an",2,"金"],"思":["s","i",1,"金"],"念":["n","ian",4,"火"],"恒":["h","eng",2,"水"],"忆":["y","i",4,"土"],
+"梦":["m","eng",4,"木"],"羽":["y","u",3,"土"],"鹤":["h","e",4,"水"],"燕":["y","an",4,"土"],"凤":["f","eng",4,"水"],
+"鸿":["h","ong",2,"水"],"麟":["l","in",2,"火"],"莺":["y","ing",1,"木"],"爱":["","ai",4,"土"],"琛":["ch","en",1,"金"],
+"北":["b","ei",3,"水"],"宛":["w","an",3,"土"],"诺":["n","uo",4,"火"],"含":["h","an",2,"水"],"暄":["x","uan",1,"金"],
+"依":["y","i",1,"土"],"桐":["t","ong",2,"木"],"芯":["x","in",1,"木"],"翔":["x","iang",2,"土"],"启":["q","i",3,"木"],
+"木":["m","u",4,"木"],"颜":["y","an",2,"木"],"皓":["h","ao",4,"木"],"娴":["x","ian",2,"土"],"灵":["l","ing",2,"火"],
+"齐":["q","i",2,"金"],"暖":["n","uan",3,"火"],"一":["y","i",1,"土"],"乐":["l","e",4,"火"],"兮":["x","i",1,"金"],
+"野":["y","e",3,"土"],"川":["ch","uan",1,"金"],"风":["f","eng",1,"水"],"离":["l","i",2,"火"],"歌":["g","e",1,"木"],
+"夜":["y","e",4,"土"],"墨":["m","o",4,"水"],"书":["sh","u",1,"金"],"画":["h","ua",4,"土"],"词":["c","i",2,"金"],
+"酒":["j","iu",3,"水"],"茶":["ch","a",2,"木"],"剑":["j","ian",4,"金"]
+};
+const SHENG={"木":"火","火":"土","土":"金","金":"水","水":"木"};
+const KE={"木":"土","土":"水","水":"火","火":"金","金":"木"};
+
+/* ================= 工具 ================= */
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function scriptOf(arr){
+  let l=0,c=0;
+  for(const ch of arr){ if(/[a-z]/i.test(ch))l++; else if(/[\u4e00-\u9fff]/.test(ch))c++; }
+  if(l&&c)return"mixed"; if(l)return"latin"; if(c)return"cjk"; return"other";
+}
+function findElem(arr){
+  for(let i=arr.length-1;i>=0;i--){ const e=PY[arr[i]]; if(e)return [e[3],arr[i]]; }
+  return null;
+}
+
+/* ================= 段位 ================= */
+function tierOf(s){
+  if(s>=90)return{name:"天作之合 · 磕到昏厥 💥",color:"#ff3d6e",quotes:["每一条规则都在盖章：这不是 CP，是民政局传票。","规则全中，红线焊死，月老本老亲自审批。"]};
+  if(s>=80)return{name:"好磕认证 · 官方盖章 🍬",color:"#ff6ea9",quotes:["判据链完整，这份磕点报告可以裱起来。","规则命中率优秀，磕这对，安全无忧。"]};
+  if(s>=70)return{name:"颇有戏 · 值得追更 📈",color:"#ffb86b",quotes:["判据扎实，可持续磕，建议加入追更名单。","官方认定：有潜力。"]};
+  if(s>=60)return{name:"微糖持久 · 越品越有 ☕",color:"#ffd76b",quotes:["甜度不高但续航持久，慢热型选手。","有故事的 CP，需要一点耐心。"]};
+  if(s>=50)return{name:"恰好朋友 · 可成之事 🌱",color:"#8fb8ff",quotes:["缘分正在升温，目前处于文火慢炖阶段。","判据一般，但不是没戏。"]};
+  if(s>=40)return{name:"化学稀薄 · 顺其自然 🍂",color:"#9db8c9",quotes:["化学信号微弱，目前更适合当同事。","判据寥寥，强磕伤身。"]};
+  return{name:"刚认识 · 先做朋友 🐢",color:"#7fd8ff",quotes:["红线信号微弱，需人工充话费。","这条线月老看了看，选择放过自己。"]};
+}
+function typeOf(f){
+  if(f.self)return"自磕型 🪞";
+  if(f.palindrome)return"命定型 💫";
+  if(f.overcome)return"宿敌型 ⚔️";
+  if(f.rhyme)return"灵魂共鸣型 🎻";
+  if(f.shared>0)return"青梅竹马型 🌱";
+  if(f.generate)return"养成甜宠型 🍬";
+  if(f.sameE)return"同类相吸型 🫶";
+  if(f.sameSurname)return"世交型 🏡";
+  if(f.cross)return"跨国恋型 ✈️";
+  return"慢热型 🐌";
+}
+
+/* ================= 规则引擎（核心，零随机） ================= */
+function analyzeNames(rawA,rawB){
+  const A=[...rawA.replace(/\s+/g,'')], B=[...rawB.replace(/\s+/g,'')];
+  const nA=rawA.trim(), nB=rawB.trim();
+  const sA=scriptOf(A), sB=scriptOf(B);
+  const rows=[]; const f={self:false,palindrome:false,overcome:false,generate:false,sameE:false,rhyme:false,shared:0,cross:false,sameSurname:false,distinct:0,latinInit:false};
+  let total=0;
+  const add=(group,title,pts,max,skip,detail)=>{rows.push({group,title,pts,max,skip,detail});total+=pts;};
+
+  add('base','基础缘分',30,30,false,'两个陌生人之间的初始善意，人人有份，童叟无欺');
+
+  f.self = rawA.toLowerCase().replace(/\s+/g,'')===rawB.toLowerCase().replace(/\s+/g,'');
+
+  /* --- 共有字 --- */
+  const setA=[...new Set(A.map(c=>c.toLowerCase()))];
+  const shared=setA.filter(c=>B.some(x=>x.toLowerCase()===c));
+  f.shared=shared.length;
+  const sPts=Math.min(24,shared.length*12);
+  add('imagery','共有缘分字',sPts,24,false,
+    shared.length?`两人共有「${shared.join('')}」——名字里的同款，命运的暗号`:'没有任何共同字符——各自独立，互不打扰');
+
+  /* --- 同姓 --- */
+  f.sameSurname=!f.self&&A[0].toLowerCase()===B[0].toLowerCase();
+  add('imagery','同姓之缘',f.sameSurname?6:0,6,false,
+    f.sameSurname?`首字同为「${A[0]}」——五百年前一家人的既视感`:`「${A[0]}」和「${B[0]}」不同姓——素不相识，清清白白`);
+
+  /* --- 长相般配 --- */
+  const d=Math.abs(A.length-B.length);
+  const lPts=[10,7,4][d]!==undefined?[10,7,4][d]:1;
+  add('none','字数般配',lPts,10,false,
+    d===0?`${A.length}字对${B.length}字——长度一致，站在一起天生一对`:
+    d===1?`${A.length}字对${B.length}字，一字之差——正常落差`:
+    `${A.length}字对${B.length}字——长短悬殊，视觉上欠点火候`);
+
+  /* --- 镜像彩蛋 --- */
+  f.palindrome=!f.self&&A.slice().reverse().join('')===B.join('');
+  add('none','镜像彩蛋',f.palindrome?15:0,15,false,
+    f.palindrome?'倒着读就是你——天造地设的回文联':'不是彼此的镜像');
+
+  /* --- 发音类规则 --- */
+  if(sA==='cjk'&&sB==='cjk'){
+    const la=PY[A[A.length-1]], lb=PY[B[B.length-1]];
+    if(la&&lb){
+      const sameSyl=la[0]===lb[0]&&la[1]===lb[1]&&la[2]===lb[2];
+      const rhyme=la[1]===lb[1];
+      f.rhyme=rhyme||sameSyl;
+      add('phonetic','押韵检测',sameSyl?14:rhyme?12:0,14,false,
+        sameSyl?`尾字同为「${la[0]?la[0]+la[1]:la[1]}」音——喊一个，俩人一起回头`:
+        rhyme?`尾字同押「${la[1]}」韵——读起来顺口，CP 名都好起`:
+        `韵母「${la[1]}」对「${lb[1]}」——不押韵，此路不通`);
+    }else{
+      const miss=[!la?A[A.length-1]:null,!lb?B[B.length-1]:null].filter(Boolean).join('」「');
+      add('phonetic','押韵检测',0,14,true,`尾字「${miss}」不在内置字库（约350常用字），无法判定押韵`);
+    }
+    const fa=PY[A[0]], fb=PY[B[0]];
+    if(fa&&fb&&fa[0]&&fb[0]){
+      add('phonetic','双声检测',fa[0]===fb[0]?8:0,8,false,
+        fa[0]===fb[0]?`首字同为「${fa[0]}」声母——双声词，CP 名自带节奏`:
+        `声母「${fa[0]}」对「${fb[0]}」——各说各话`);
+    }else{
+      add('phonetic','双声检测',0,8,true,'涉及零声母或字库外字符——无法判定双声');
+    }
+    const tones=new Set([...A,...B].map(c=>PY[c]&&PY[c][2]).filter(Boolean));
+    f.distinct=tones.size;
+    if(tones.size>0){
+      const tPts={4:8,3:6,2:3,1:0}[tones.size];
+      add('phonetic','声调起伏',tPts,8,false,
+        tones.size===4?'四声齐全——平仄交错，像首情歌':
+        tones.size===3?'三声交错——抑扬顿挫，有起伏':
+        tones.size===2?'双声调重复——略单调，但胜在稳定':
+        '全程一个调——波澜不惊，稳如老狗');
+    }else{
+      add('phonetic','声调起伏',0,8,true,'无字库内字符——无法分析声调');
+    }
+    const ea=findElem(A), eb=findElem(B);
+    if(ea&&eb){
+      let ePts,rel;
+      if(ea[0]===eb[0]){ePts=8;f.sameE=true;rel=`同为「${ea[0]}」——同类共鸣，频道秒对上`;}
+      else if(SHENG[ea[0]]===eb[0]){ePts=10;f.generate=true;rel=`${ea[0]}生${eb[0]}——${nA}付出、${nB}接收，养成系甜宠`;}
+      else if(SHENG[eb[0]]===ea[0]){ePts=10;f.generate=true;rel=`${eb[0]}生${ea[0]}——${nB}点亮${nA}，双向奔赴`;}
+      else if(KE[ea[0]]===eb[0]){ePts=6;f.overcome=true;rel=`${ea[0]}克${eb[0]}——相爱相杀，戏剧张力拉满`;}
+      else{ePts=6;f.overcome=true;rel=`${eb[0]}克${ea[0]}——欢喜冤家，越克越上头`;}
+      add('imagery','五行生克',ePts,10,false,`「${ea[1]}」属${ea[0]}，「${eb[1]}」属${eb[0]} · ${rel}`);
+    }else{
+      add('imagery','五行生克',0,10,true,'尾字五行属性未知——无法判定生克');
+    }
+  }else if(sA==='latin'&&sB==='latin'){
+    add('phonetic','押韵检测',0,14,true,'中文专属规则，英文名跳过');
+    add('phonetic','双声检测',0,8,true,'中文专属规则，英文名跳过');
+    add('phonetic','声调起伏',0,8,true,'中文专属规则，英文名跳过');
+    add('imagery','五行生克',0,10,true,'中文专属规则，英文名跳过');
+    const initSame=A[0].toLowerCase()===B[0].toLowerCase();
+    f.latinInit=initSame;
+    const last2=A.length>2&&B.length>2&&A.slice(-2).join('').toLowerCase()===B.slice(-2).join('').toLowerCase();
+    const pts=Math.min(12,shared.length*2+(initSame?6:0)+(last2?4:0));
+    add('phonetic','英文音韵',pts,12,false,[
+      initSame?`首字母同为「${A[0].toUpperCase()}」——字母情侣`:`首字母「${A[0].toUpperCase()}」对「${B[0].toUpperCase()}」`,
+      shared.length?`共有字母：${shared.join(' ')}`:'无共有字母',
+      last2?'结尾两字母押韵':''].filter(Boolean).join(' · '));
+  }else{
+    add('phonetic','押韵检测',0,14,true,'中英混搭，无法同台比较');
+    add('phonetic','双声检测',0,8,true,'混搭语言，跳过');
+    add('phonetic','声调起伏',0,8,true,'混搭语言，跳过');
+    add('imagery','五行生克',0,10,true,'混搭语言，跳过');
+  }
+
+  /* --- 跨语言 --- */
+  f.cross=(sA!==sB&&sA!=='other'&&sB!=='other')||sA==='mixed'||sB==='mixed';
+  if(sA===sB&&sA!=='mixed'){
+    add('none','跨语言加成',0,4,true,'同语种交流，走常规通道');
+  }else{
+    add('none','跨语言加成',f.cross?4:0,4,false,'一个中文一个西文——跨国恋氛围加成');
+  }
+
+  /* --- 汇总 --- */
+  const score=Math.min(99,total);
+  const grp=g=>{let p=0,m=0;rows.forEach(r=>{if(r.group===g&&!r.skip){p+=r.pts;m+=r.max;}});return m?Math.round(p/m*100):50;};
+  const phonetic=grp('phonetic'), imagery=grp('imagery');
+  const tension=Math.max(5,Math.min(100,28+(f.overcome?32:f.generate?20:f.sameE?12:0)+f.distinct*8+(d<=1?8:0)+(f.palindrome?20:0)+(f.latinInit?10:0)));
+
+  /* --- CP 名（取双方尾字，撞字则取首字） --- */
+  let cp;
+  if(sA==='latin'&&sB==='latin'){ cp=A[0].toUpperCase()+"·"+B[0].toUpperCase(); }
+  else{
+    const a=A[A.length-1],b=B[B.length-1];
+    cp=(a.toLowerCase()!==b.toLowerCase())?(a+b):(A[0]+B[0]);
+  }
+
+  const t=tierOf(score);
+  const quote=f.self?"「 磕自己也给满贯——毕竟没有人比你更懂你 😌 」":"「 "+t.quotes[score%t.quotes.length]+" 」";
+
+  return {score,subs:[["音韵契合",phonetic],["意境缘分",imagery],["氛围张力",tension]],
+    rows,total,cp,type:typeOf(f),tier:t,quote,self:f.self};
+}
+
+/* ================= UI ================= */
+let toastTimer;
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),1800);}
+function animateNum(el,target,dur){const t0=performance.now();
+  (function step(t){const p=Math.min(1,(t-t0)/dur);el.textContent=Math.round(target*(1-Math.pow(1-p,3)));
+  if(p<1)requestAnimationFrame(step);})(t0);}
+function burstHearts(){
+  const wrap=$("gaugeWrap"),em=["💗","💖","✨","💕","💫"];
+  for(let i=0;i<12;i++){
+    const s=document.createElement("span");
+    s.className="burst";s.textContent=em[i%em.length];
+    s.style.left="50%";s.style.top="45%";
+    s.style.setProperty("--dx",(((i*53)%160)-80)+"px");
+    s.style.animationDelay=(i*60)+"ms";
+    wrap.appendChild(s);setTimeout(()=>s.remove(),2200);
+  }
+}
+function renderRules(res){
+  let html=`<div class="sum-line">基础 30 ＋ 加成 ${res.total-30} ＝ ${res.total}${res.total>99?'（封顶 99）':''}</div>`;
+  res.rows.forEach(r=>{
+    const cls=r.skip?"skip":(r.pts>0?"":"zero");
+    const ico=r.skip?"?":(r.pts>0?"✓":"—");
+    const pts=r.skip?"跳过":("＋"+r.pts);
+    html+=`<div class="rule-row"><div class="rule-ico">${ico}</div>
+      <div class="rule-body"><div class="rule-title">${esc(r.title)}</div>
+      <div class="rule-desc">${esc(r.detail)}</div></div>
+      <div class="rule-pts ${cls}">${pts}</div></div>`;
+  });
+  $("rulesList").innerHTML=html;
+}
+
+const MSGS=["正在查阅发音字典","正在比对声母韵母","正在检查五行生克","正在扫描共有字符","正在起草磕点报告"];
+const BAR_COLORS=["#ff7eb3","#b38bff","#ff9d6b"];
+let busy=false; const history=[];
+
+async function analyze(){
+  if(busy)return;
+  const a=$("nameA").value.trim(), b=$("nameB").value.trim();
+  if(!a||!b){toast("两个名字都要填上哦～");
+    [$("nameA"),$("nameB")].forEach(el=>{if(!el.value.trim()){el.classList.add("shake");setTimeout(()=>el.classList.remove("shake"),450);}});
+    return;}
+  busy=true;const btn=$("goBtn");btn.disabled=true;btn.textContent="鉴 定 中 …";
+
+  const res=analyzeNames(a,b);
+  const result=$("result"),scan=$("scan"),verdict=$("verdict");
+  result.classList.remove("hidden");verdict.classList.add("hidden");scan.classList.remove("hidden");
+  result.scrollIntoView({behavior:"smooth",block:"nearest"});
+  for(const m of MSGS){$("scanText").textContent=m;await sleep(430);}
+
+  scan.classList.add("hidden");verdict.classList.remove("hidden");
+
+  $("cpName").textContent=res.cp;
+  $("cpType").textContent=" · "+res.type;
+  const tierEl=$("tier");tierEl.textContent=res.tier.name;tierEl.style.color=res.tier.color;
+  $("quote").textContent=res.quote;
+
+  const top=res.rows.filter(r=>!r.skip&&r.pts>0&&r.group!=='base').sort((x,y)=>y.pts-x.pts).slice(0,2);
+  $("chips").innerHTML="主要磕点："+top.map(r=>`<span>${esc(r.title)} +${r.pts}</span>`).join("");
+
+  renderRules(res);
+
+  const C=477.52,fill=$("gaugeFill");
+  fill.style.transition="none";fill.style.strokeDashoffset=C;
+  void fill.getBoundingClientRect();
+  fill.style.transition="";fill.style.strokeDashoffset=C*(1-res.score/100);
+  animateNum($("scoreNum"),res.score,1300);
+
+  const fills=[...document.querySelectorAll(".bar-fill")];
+  const vals=[...document.querySelectorAll(".bar-val")];
+  fills.forEach(el=>{el.style.transition="none";el.style.width="0%";});
+  void fills[0].offsetWidth;
+  res.subs.forEach(([,v],i)=>{fills[i].style.transition="";fills[i].style.width=v+"%";
+    fills[i].style.background=BAR_COLORS[i];animateNum(vals[i],v,1100);});
+
+  if(res.score>=80)burstHearts();
+  history.unshift({a,b,s:res.score});if(history.length>6)history.pop();
+  $("history").innerHTML=history.map(h=>`<span class="h-chip">${esc(h.a)} × ${esc(h.b)} · <b>${h.s}</b></span>`).join("");
+
+  btn.disabled=false;btn.textContent="开 始 鉴 定 🔍";busy=false;
+}
+
+ $("goBtn").addEventListener("click",analyze);
+[$("nameA"),$("nameB")].forEach(el=>el.addEventListener("keydown",e=>{if(e.key==="Enter")analyze();}));
+ $("againBtn").addEventListener("click",()=>{$("result").classList.add("hidden");$("nameA").focus();$("nameA").select();});
+
+/* 背景爱心（同样零随机，位置全部写死） */
+(function(){
+  const box=$("bgHearts"),em=["💗","💕","💖","✨","🩷","💫"];
+  const L=[8,22,35,48,61,74,87,15,40,66,80,28,53,90,5,70];
+  const S=[14,20,12,24,16,22,13,18,26,15,21,17,23,14,19,25];
+  const D=[12,18,9,21,15,11,19,13,17,10,22,14,16,9,20,12];
+  const DEL=[0,3,6,9,1,4,7,11,2,5,8,12,6,10,3,15];
+  for(let i=0;i<16;i++){
+    const s=document.createElement("span");
+    s.textContent=em[i%em.length];
+    s.style.left=L[i]+"%";s.style.fontSize=S[i]+"px";
+    s.style.animationDuration=D[i]+"s";s.style.animationDelay=(-DEL[i])+"s";
+    box.appendChild(s);
+  }
+})();
+</script>
+</body>
+</html>
