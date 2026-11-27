@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CP 鉴定所 2.0 · 全规则判定版</title>
+<title>CP 鉴定所 2.1 · 校准版</title>
 <style>
   html{background:#ffffff;color-scheme:light}
   *{margin:0;padding:0;box-sizing:border-box}
@@ -122,10 +122,10 @@
 <div class="bg-hearts" id="bgHearts"></div>
 
 <main class="card">
-  <h1>💕 CP 鉴定所 2.0</h1>
+  <h1>💕 CP 鉴定所 2.1</h1>
   <p class="sub">不摇骰子 · 按名字本身判 · 每一分都有出处</p>
   <div class="tags">
-    <span>📜 全规则判定</span><span>🎲 零随机</span><span>🔍 判据全公开</span>
+    <span>📜 全规则判定</span><span>🎲 零随机</span><span>⚖️ v2.1 分布校准</span>
   </div>
 
   <section class="input-row">
@@ -184,7 +184,7 @@
 
   <div class="history" id="history"></div>
 
-  <p class="footnote">✦ 本页没有一处 Math.random · 分数完全由声母韵母 / 声调 / 五行 / 结构规则产生 ✦
+  <p class="footnote">✦ 本页没有一处 Math.random · v2.1 校准：普通对 ≈ 38，天选对 90+ ✦
 ✦ 生僻字查无此字会如实标注「无法判定」，绝不蒙混过关 ✦</p>
 </main>
 
@@ -260,6 +260,15 @@ const PY={
 };
 const SHENG={"木":"火","火":"土","土":"金","金":"水","水":"木"};
 const KE={"木":"土","土":"水","水":"火","火":"金","金":"木"};
+/* v2.1 新增：韵摄（近韵判定，参照中华新韵粗分）与声母发音部位 */
+const FAM={"a":"a","ia":"a","ua":"a","o":"o","uo":"o","e":"o","ie":"ie","ue":"ie","ai":"ai","uai":"ai",
+"ei":"ei","ui":"ei","ao":"ao","iao":"ao","ou":"ou","iu":"ou","an":"an","ian":"an","uan":"an",
+"en":"en","in":"en","un":"en","ang":"ang","iang":"ang","uang":"ang","eng":"eng","ing":"eng","ong":"eng","iong":"eng",
+"i":"i","v":"i","u":"u"};
+const PLACE={"b":"唇音","p":"唇音","m":"唇音","f":"唇音","d":"舌尖音","t":"舌尖音","n":"舌尖音","l":"舌尖音",
+"g":"舌根音","k":"舌根音","h":"舌根音","j":"舌面音","q":"舌面音","x":"舌面音","zh":"翘舌音","ch":"翘舌音","sh":"翘舌音","r":"翘舌音",
+"z":"平舌音","c":"平舌音","s":"平舌音","y":"零声母","w":"零声母","":"零声母"};
+const BASE=20;
 
 /* ================= 工具 ================= */
 const $=id=>document.getElementById(id);
@@ -307,16 +316,16 @@ function analyzeNames(rawA,rawB){
   let total=0;
   const add=(group,title,pts,max,skip,detail)=>{rows.push({group,title,pts,max,skip,detail});total+=pts;};
 
-  add('base','基础缘分',30,30,false,'两个陌生人之间的初始善意，人人有份，童叟无欺');
+  add('base','基础缘分',BASE,BASE,false,'两个陌生人之间的初始善意，人人有份，童叟无欺');
 
   f.self = rawA.toLowerCase().replace(/\s+/g,'')===rawB.toLowerCase().replace(/\s+/g,'');
 
-  /* --- 共有字 --- */
+  /* --- 共有字（v2.1：16/字，上限32） --- */
   const setA=[...new Set(A.map(c=>c.toLowerCase()))];
   const shared=setA.filter(c=>B.some(x=>x.toLowerCase()===c));
   f.shared=shared.length;
-  const sPts=Math.min(24,shared.length*12);
-  add('imagery','共有缘分字',sPts,24,false,
+  const sPts=Math.min(32,shared.length*16);
+  add('imagery','共有缘分字',sPts,32,false,
     shared.length?`两人共有「${shared.join('')}」——名字里的同款，命运的暗号`:'没有任何共同字符——各自独立，互不打扰');
 
   /* --- 同姓 --- */
@@ -324,10 +333,10 @@ function analyzeNames(rawA,rawB){
   add('imagery','同姓之缘',f.sameSurname?6:0,6,false,
     f.sameSurname?`首字同为「${A[0]}」——五百年前一家人的既视感`:`「${A[0]}」和「${B[0]}」不同姓——素不相识，清清白白`);
 
-  /* --- 长相般配 --- */
+  /* --- 长相般配（v2.1 降权：6/4/2） --- */
   const d=Math.abs(A.length-B.length);
-  const lPts=[10,7,4][d]!==undefined?[10,7,4][d]:1;
-  add('none','字数般配',lPts,10,false,
+  const lPts=[6,4,2][d]!==undefined?[6,4,2][d]:1;
+  add('none','字数般配',lPts,6,false,
     d===0?`${A.length}字对${B.length}字——长度一致，站在一起天生一对`:
     d===1?`${A.length}字对${B.length}字，一字之差——正常落差`:
     `${A.length}字对${B.length}字——长短悬殊，视觉上欠点火候`);
@@ -343,52 +352,63 @@ function analyzeNames(rawA,rawB){
     if(la&&lb){
       const sameSyl=la[0]===lb[0]&&la[1]===lb[1]&&la[2]===lb[2];
       const rhyme=la[1]===lb[1];
-      f.rhyme=rhyme||sameSyl;
-      add('phonetic','押韵检测',sameSyl?14:rhyme?12:0,14,false,
-        sameSyl?`尾字同为「${la[0]?la[0]+la[1]:la[1]}」音——喊一个，俩人一起回头`:
+      const famA=FAM[la[1]], famB=FAM[lb[1]];
+      const near=!rhyme&&famA&&famB&&famA===famB;
+      f.rhyme=rhyme||sameSyl||near;
+      const py=s=>s[0]?s[0]+s[1]:s[1];
+      /* v2.1：同音18 / 同韵15 / 近韵(同韵摄)8 */
+      add('phonetic','押韵检测',sameSyl?18:rhyme?15:near?8:0,18,false,
+        sameSyl?`尾字同为「${py(la)}」音——喊一个，俩人一起回头`:
         rhyme?`尾字同押「${la[1]}」韵——读起来顺口，CP 名都好起`:
+        near?`同属「${famA}」韵摄（${la[1]}≈${lb[1]}）——半押韵，念着有点意思`:
         `韵母「${la[1]}」对「${lb[1]}」——不押韵，此路不通`);
     }else{
       const miss=[!la?A[A.length-1]:null,!lb?B[B.length-1]:null].filter(Boolean).join('」「');
-      add('phonetic','押韵检测',0,14,true,`尾字「${miss}」不在内置字库（约350常用字），无法判定押韵`);
+      add('phonetic','押韵检测',0,18,true,`尾字「${miss}」不在内置字库（约350常用字），无法判定押韵`);
     }
     const fa=PY[A[0]], fb=PY[B[0]];
-    if(fa&&fb&&fa[0]&&fb[0]){
-      add('phonetic','双声检测',fa[0]===fb[0]?8:0,8,false,
-        fa[0]===fb[0]?`首字同为「${fa[0]}」声母——双声词，CP 名自带节奏`:
-        `声母「${fa[0]}」对「${fb[0]}」——各说各话`);
+    if(fa&&fb){
+      /* v2.1：同声母8 / 同发音部位5（新增） */
+      const sameI=fa[0]===fb[0]&&fa[0]!=="";
+      const sameP=PLACE[fa[0]]===PLACE[fb[0]];
+      add('phonetic','双声检测',sameI?8:sameP?5:0,8,false,
+        sameI?`首字同为「${fa[0]}」声母——双声词，CP 名自带节奏`:
+        sameP?`首字声母同属${PLACE[fa[0]]}（${fa[0]||"零声母"}·${fb[0]||"零声母"}）——发音部位相同，念起来不打架`:
+        `声母「${fa[0]||"零声母"}」对「${fb[0]||"零声母"}」——各说各话`);
     }else{
-      add('phonetic','双声检测',0,8,true,'涉及零声母或字库外字符——无法判定双声');
+      add('phonetic','双声检测',0,8,true,'首字不在内置字库——无法判定双声');
     }
     const tones=new Set([...A,...B].map(c=>PY[c]&&PY[c][2]).filter(Boolean));
     f.distinct=tones.size;
     if(tones.size>0){
-      const tPts={4:8,3:6,2:3,1:0}[tones.size];
-      add('phonetic','声调起伏',tPts,8,false,
+      /* v2.1：12/8/4/0 */
+      const tPts={4:12,3:8,2:4,1:0}[tones.size];
+      add('phonetic','声调起伏',tPts,12,false,
         tones.size===4?'四声齐全——平仄交错，像首情歌':
         tones.size===3?'三声交错——抑扬顿挫，有起伏':
         tones.size===2?'双声调重复——略单调，但胜在稳定':
         '全程一个调——波澜不惊，稳如老狗');
     }else{
-      add('phonetic','声调起伏',0,8,true,'无字库内字符——无法分析声调');
+      add('phonetic','声调起伏',0,12,true,'无字库内字符——无法分析声调');
     }
     const ea=findElem(A), eb=findElem(B);
     if(ea&&eb){
       let ePts,rel;
+      /* v2.1：同8 / 生12 / 克4（相克降为小分，宿敌张力另算在氛围里） */
       if(ea[0]===eb[0]){ePts=8;f.sameE=true;rel=`同为「${ea[0]}」——同类共鸣，频道秒对上`;}
-      else if(SHENG[ea[0]]===eb[0]){ePts=10;f.generate=true;rel=`${ea[0]}生${eb[0]}——${nA}付出、${nB}接收，养成系甜宠`;}
-      else if(SHENG[eb[0]]===ea[0]){ePts=10;f.generate=true;rel=`${eb[0]}生${ea[0]}——${nB}点亮${nA}，双向奔赴`;}
-      else if(KE[ea[0]]===eb[0]){ePts=6;f.overcome=true;rel=`${ea[0]}克${eb[0]}——相爱相杀，戏剧张力拉满`;}
-      else{ePts=6;f.overcome=true;rel=`${eb[0]}克${ea[0]}——欢喜冤家，越克越上头`;}
-      add('imagery','五行生克',ePts,10,false,`「${ea[1]}」属${ea[0]}，「${eb[1]}」属${eb[0]} · ${rel}`);
+      else if(SHENG[ea[0]]===eb[0]){ePts=12;f.generate=true;rel=`${ea[0]}生${eb[0]}——${nA}滋养${nB}，养成系甜宠`;}
+      else if(SHENG[eb[0]]===ea[0]){ePts=12;f.generate=true;rel=`${eb[0]}生${ea[0]}——${nB}点亮${nA}，双向奔赴`;}
+      else if(KE[ea[0]]===eb[0]){ePts=4;f.overcome=true;rel=`${ea[0]}克${eb[0]}——相爱相杀，戏剧张力拉满`;}
+      else{ePts=4;f.overcome=true;rel=`${eb[0]}克${ea[0]}——欢喜冤家，越克越上头`;}
+      add('imagery','五行生克',ePts,12,false,`「${ea[1]}」属${ea[0]}，「${eb[1]}」属${eb[0]} · ${rel}`);
     }else{
-      add('imagery','五行生克',0,10,true,'尾字五行属性未知——无法判定生克');
+      add('imagery','五行生克',0,12,true,'尾字五行属性未知——无法判定生克');
     }
   }else if(sA==='latin'&&sB==='latin'){
-    add('phonetic','押韵检测',0,14,true,'中文专属规则，英文名跳过');
+    add('phonetic','押韵检测',0,18,true,'中文专属规则，英文名跳过');
     add('phonetic','双声检测',0,8,true,'中文专属规则，英文名跳过');
-    add('phonetic','声调起伏',0,8,true,'中文专属规则，英文名跳过');
-    add('imagery','五行生克',0,10,true,'中文专属规则，英文名跳过');
+    add('phonetic','声调起伏',0,12,true,'中文专属规则，英文名跳过');
+    add('imagery','五行生克',0,12,true,'中文专属规则，英文名跳过');
     const initSame=A[0].toLowerCase()===B[0].toLowerCase();
     f.latinInit=initSame;
     const last2=A.length>2&&B.length>2&&A.slice(-2).join('').toLowerCase()===B.slice(-2).join('').toLowerCase();
@@ -398,10 +418,10 @@ function analyzeNames(rawA,rawB){
       shared.length?`共有字母：${shared.join(' ')}`:'无共有字母',
       last2?'结尾两字母押韵':''].filter(Boolean).join(' · '));
   }else{
-    add('phonetic','押韵检测',0,14,true,'中英混搭，无法同台比较');
+    add('phonetic','押韵检测',0,18,true,'中英混搭，无法同台比较');
     add('phonetic','双声检测',0,8,true,'混搭语言，跳过');
-    add('phonetic','声调起伏',0,8,true,'混搭语言，跳过');
-    add('imagery','五行生克',0,10,true,'混搭语言，跳过');
+    add('phonetic','声调起伏',0,12,true,'混搭语言，跳过');
+    add('imagery','五行生克',0,12,true,'混搭语言，跳过');
   }
 
   /* --- 跨语言 --- */
@@ -452,7 +472,7 @@ function burstHearts(){
   }
 }
 function renderRules(res){
-  let html=`<div class="sum-line">基础 30 ＋ 加成 ${res.total-30} ＝ ${res.total}${res.total>99?'（封顶 99）':''}</div>`;
+  let html=`<div class="sum-line">基础 ${BASE} ＋ 加成 ${res.total-BASE} ＝ ${res.total}${res.total>99?'（封顶 99）':''}</div>`;
   res.rows.forEach(r=>{
     const cls=r.skip?"skip":(r.pts>0?"":"zero");
     const ico=r.skip?"?":(r.pts>0?"✓":"—");
