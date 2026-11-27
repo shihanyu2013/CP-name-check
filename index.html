@@ -534,6 +534,39 @@ function analyzeNames(rawA,rawB){
     squareFound?`首字母连成「${combined.toUpperCase()}」，内含叠音「${squareFound.toUpperCase()}${squareFound.toUpperCase()}」——字母会自己跳舞`:
     combined?`首字母连成「${combined.toUpperCase()}」——没有连续的叠音`:'无法提取首字母');
 
+  /* --- v2.5 新增踩分点 --- */
+  if(sA==='cjk'&&sB==='cjk'){
+    const endA=PY[A[A.length-1]], endB=PY[B[B.length-1]];
+    const headA=PY[A[0]], headB=PY[B[0]];
+    if(endA&&endB&&headA&&headB){
+      const initChain=(endA[0]!==""&&endA[0]===headB[0])||(endB[0]!==""&&endB[0]===headA[0]);
+      add('phonetic','声母接龙',initChain?4:0,4,false,
+        initChain?'一人的尾字声母，正好是另一人首字的声母——声音在接力':'尾字与首字的声母没有接上');
+      const finChain=endA[1]===headB[1]||endB[1]===headA[1];
+      add('phonetic','韵母接龙',finChain?4:0,4,false,
+        finChain?'一人的尾字韵母，与另一人的首字韵母相接——韵脚在传递':'尾字与首字的韵母没有接上');
+      const sameTail=!f.self&&A[A.length-1]===B[B.length-1];
+      add('imagery','同尾相守',sameTail?5:0,5,false,
+        sameTail?`两人都以「${A[A.length-1]}」收尾——走到最后也是同一个字`:'两人的尾字不同');
+      const nasal=/n$|ng$/.test(endA[1])&&/n$|ng$/.test(endB[1]);
+      add('phonetic','鼻音共振',nasal?4:0,4,false,
+        nasal?`尾字都带鼻音（${endA[1]} · ${endB[1]}）——嗡嗡地共振`:'至少一人的尾字不是鼻音收尾');
+    }else{
+      add('phonetic','声母接龙',0,4,true,'字库外字符——无法判定');
+      add('phonetic','韵母接龙',0,4,true,'字库外字符——无法判定');
+      add('imagery','同尾相守',0,5,true,'字库外字符——无法判定');
+      add('phonetic','鼻音共振',0,4,true,'字库外字符——无法判定');
+    }
+  }else{
+    add('phonetic','声母接龙',0,4,true,'中文专属规则，跳过');
+    add('phonetic','韵母接龙',0,4,true,'中文专属规则，跳过');
+    add('imagery','同尾相守',0,5,true,'中文专属规则，跳过');
+    add('phonetic','鼻音共振',0,4,true,'中文专属规则，跳过');
+  }
+  const bothSingle=A.length===1&&B.length===1;
+  add('none','单字简洁派',bothSingle?3:0,3,false,
+    bothSingle?'两人都是单字名——简洁有力，一个字就够了':'至少一人是多字名');
+
   /* --- 汇总 --- */
   const score=Math.min(99,total);
   const grp=g=>{let p=0,m=0;rows.forEach(r=>{if(r.group===g&&!r.skip){p+=r.pts;m+=r.max;}});return m?Math.round(p/m*100):50;};
