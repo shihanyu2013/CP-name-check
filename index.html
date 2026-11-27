@@ -509,25 +509,15 @@ function analyzeNames(rawA,rawB){
   }
 
   /* --- v2.4 新增：首字母叠音 --- */
-  const initialsOf=raw=>{
-    const out=[];
-    raw.trim().split(/\s+/).forEach(tok=>{
-      [...tok].forEach(ch=>{
-        if(/[a-z]/i.test(ch)){ out.push(ch.toLowerCase()); }
-        else if(PY[ch]){ const e=PY[ch]; out.push(e[0]||(e[1]?e[1][0]:"")); }
-      });
-    });
-    return out.filter(Boolean);
-  };
-  /* 只取每个词/字的第一个首字母：英文按词取，中文按字取 */
+  /* 首字母：英文每个词取第一个字母；中文每个字取拼音声母（零声母取韵母首字母） */
   const firstInits=raw=>{
-    const toks=raw.trim().split(/\s+/);
     const res=[];
-    toks.forEach(tok=>{
-      const c=[...tok][0];
-      if(!c)return;
-      if(/[a-z]/i.test(c))res.push(c.toLowerCase());
-      else if(PY[c]){const e=PY[c];res.push(e[0]||(e[1]?e[1][0]:""));}
+    raw.trim().split(/\s+/).forEach(tok=>{
+      let latinDone=false;
+      [...tok].forEach(c=>{
+        if(/[a-z]/i.test(c)){ if(!latinDone){res.push(c.toLowerCase());latinDone=true;} }
+        else if(PY[c]){const e=PY[c];res.push(e[0]||(e[1]?e[1][0]:""));}
+      });
     });
     return res.filter(Boolean);
   };
